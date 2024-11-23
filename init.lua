@@ -92,7 +92,7 @@ vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = false
-
+vim.diagnostic.enable(false)
 -- [[ Setting options ]]
 -- See `:help vim.opt`
 -- NOTE: You can change these options as you wish!
@@ -100,6 +100,7 @@ vim.g.have_nerd_font = false
 
 -- Make line numbers default
 vim.opt.number = true
+vim.opt.conceallevel = 1
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
 -- vim.opt.relativenumber = true
@@ -180,6 +181,7 @@ vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' }
 -- vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
 -- vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
 -- vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
+vim.keymap.set('n', '<leader>ip', '<cmd>ObsidianPasteImg<CR>')
 
 -- Keybinds to make split navigation easier.
 --  Use CTRL+<hjkl> to switch between windows
@@ -229,7 +231,7 @@ vim.opt.rtp:prepend(lazypath)
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
-  'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
+  --'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
 
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
@@ -434,6 +436,9 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sn', function()
         builtin.find_files { cwd = vim.fn.stdpath 'config' }
       end, { desc = '[S]earch [N]eovim files' })
+      -- vim.keymap.set('n', '<leader>ip', function()
+      --   vim.cmd 'ObsidianPasteImg'
+      -- end, { desc = '[P]aste Image from Obsidian' })
     end,
   },
 
@@ -604,8 +609,15 @@ require('lazy').setup({
       --  - capabilities (table): Override fields in capabilities. Can be used to disable certain LSP features.
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
+      local lspconfig = require 'lspconfig'
+      local cmp_nvim_lsp = require 'cmp_nvim_lsp'
       local servers = {
-        -- clangd = {},
+        clangd = {
+          cmd = { 'clangd' },
+          filetypes = { 'c', 'cpp', 'objc', 'objcpp' },
+          root_dir = lspconfig.util.root_pattern('compile_flags.txt', 'compile_commands.json', '.git'),
+          capabilities = cmp_nvim_lsp.default_capabilities(),
+        },
         -- gopls = {},
         -- pyright = {},
         -- rust_analyzer = {},
@@ -748,7 +760,13 @@ require('lazy').setup({
       -- See `:help cmp`
       local cmp = require 'cmp'
       local luasnip = require 'luasnip'
-      luasnip.config.setup {}
+      luasnip.config.setup {
+        enable_autosnippets = true, -- Enables autotriggering
+        history = true,
+        -- updateevents = 'TextChanged,TextChangedI',
+        region_check_events = 'InsertEnter',
+        delete_check_events = 'TextChanged,InsertLeave',
+      }
 
       cmp.setup {
         snippet = {
@@ -835,7 +853,7 @@ require('lazy').setup({
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      vim.cmd.colorscheme 'tokyonight'
 
       -- You can configure highlights by doing something like:
       vim.cmd.hi 'Comment gui=none'
@@ -929,7 +947,7 @@ require('lazy').setup({
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   --    For additional information, see `:help lazy.nvim-lazy.nvim-structuring-your-plugins`
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
 }, {
   ui = {
     -- If you are using a Nerd Font: set icons to an empty table which will use the
@@ -951,6 +969,31 @@ require('lazy').setup({
     },
   },
 })
+local g = vim.g
+local o = vim.o
+local opt = vim.opt
 
+g.python_recommended_style = 0
+g.rust_recommended_style = 0
+opt.tabstop = 2
+opt.smartindent = true
+opt.shiftwidth = 2
+opt.expandtab = true
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+--
+-- require('luasnip.loaders.from_lua').load { paths = { '~/.config/nvim/lua/snippets' } }
+-- require('luasnip.loaders.from_lua').load { paths = { '~/.config/nvim/luaSnip' } }
+-- load snippets from path/of/your/nvim/config/my-cool-snippets
+-- require('luasnip.loaders.from_vscode').lazy_load { paths = { '~/.config/nvim/luaSnip' } }
+--
+-- vim.cmd [[
+-- " Use Tab to expand and jump through snippets
+-- imap <silent><expr> <Tab> luasnip#expand_or_jumpable() ? '<Plug>luasnip-expand-or-jump' : '<Tab>'
+-- smap <silent><expr> <Tab> luasnip#jumpable(1) ? '<Plug>luasnip-jump-next' : '<Tab>'
+--
+-- " Use Shift-Tab to jump backwards through snippets
+-- imap <silent><expr> <S-Tab> luasnip#jumpable(-1) ? '<Plug>luasnip-jump-prev' : '<S-Tab>'
+-- smap <silent><expr> <S-Tab> luasnip#jumpable(-1) ? '<Plug>luasnip-jump-prev' : '<S-Tab>'
+-- ]]
+require 'keymappings.obsidian_mappings'
